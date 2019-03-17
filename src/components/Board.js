@@ -1,4 +1,4 @@
-import React, { useEffect, useState, createContext, useReducer } from "react";
+import React, { useEffect, useState, useReducer } from "react";
 import useKey from "use-key-hook";
 import styled from "@emotion/styled";
 import Cell from "./Cell.js";
@@ -8,10 +8,6 @@ import * as R from "ramda";
 import Puzzle from "./../Puzzle.js";
 const puz = require("./../puzzles/nov_17.json");
 const puzzle = Puzzle.from(puz).toJson();
-
-const BoardContext = createContext({
-  dimensions: { rows: null, cols: null },
-});
 
 function getCellIndex(row, col, dimensions) {
   const previousRowsPriorCells = row * dimensions.cols;
@@ -69,7 +65,49 @@ export default function Board(props) {
 
   const [board, dispatch] = useReducer(boardReducer, initialBoardState);
   const { cells, direction, selectedCell } = board;
-  const hasSelected = selectedCell.row && selectedCell.col;
+
+  const getNextCellPos = (row, col, direction) => {
+    switch (direction) {
+      case "across": {
+        const isLastInRow = col == dimensions.cols - 1; // Last column
+        if (isLastInRow) {
+          return {
+            row: (row + 1) % dimensions.rows,
+            col: 0,
+          };
+        } else {
+          return {
+            row: row,
+            col: (col + 1) % dimensions.cols,
+          };
+        }
+      }
+      case "down": {
+        const isLastInCol = row == dimensions.rows - 1; // Last row
+        if (isLastInCol) {
+          return {
+            row: 0,
+            col: (col + 1) % dimensions.cols,
+          };
+        } else {
+          return {
+            row: (row + 1) % dimensions.rows,
+            col: col,
+          };
+        }
+      }
+    }
+  };
+
+  function getNextNonVoidCellPos(row, col, direction) {
+    const nextPos = getNextCellPos(row, col, direction);
+    const next = cells[getCellIndex(nextPos.row, nextPos.col, dimensions)];
+    if (next.isVoid) {
+      return getNextNonVoidCellPos(nextPos.row, nextPos.col, direction);
+    } else {
+      return nextPos;
+    }
+  }
 
   const setCell = payload => {
     dispatch({ type: "setCellValue", payload });
@@ -130,54 +168,31 @@ export default function Board(props) {
           pos: { row: selected.row, col: selected.col },
           value: letter,
         });
-        const isLast = (direction, value) => {
-          return {
-            across: () => {
-              return value == dimensions.cols - 1;
-            },
-            down: () => {
-              return value == dimensions.rows - 1;
-            },
-          }[direction]();
-        };
-        // const nextNonVoidCell = (direction, value) => {
-        //   return {
-        //     across() {
-        //       const isLast = value == dimensions.cols - 1;
-        //       // find next cell
-        //       const nextCell = isLast("across", selected.col)
+        const next = getNextNonVoidCellPos(
+          selected.row,
+          selected.col,
+          direction,
+        );
+        console.log("next", next);
+        setSelected(next);
+        // setSelected({
+        //   row:
+        //     direction == "across"
+        //       ? selected.col == dimensions.cols - 1 // Last column
         //         ? (selected.row + 1) % dimensions.rows
-        //         : selected.row;
-        //       // if not void, return pos
-        //       // if void, recursively find that cell's next and check again
-        //     },
-        //     down() {
-        //       const isLast = value == dimensions.rows - 1;
-        //       const nextCell = isLast("down", selected.row)
+        //         : selected.row
+        //       : selected.row == dimensions.rows - 1 // Last row
+        //       ? 0
+        //       : (selected.row + 1) % dimensions.rows,
+        //   col:
+        //     direction == "across"
+        //       ? selected.col == dimensions.cols - 1 // Last column
         //         ? 0
-        //         : (selected.row + 1) % dimensions.rows;
-        //       return;
-        //     },
-        //   }[direction]();
-        // };
-        setSelected({
-          row:
-            direction == "across"
-              ? isLast("across", selected.col)
-                ? (selected.row + 1) % dimensions.rows
-                : selected.row
-              : isLast("down", selected.row)
-              ? 0
-              : (selected.row + 1) % dimensions.rows,
-          col:
-            direction == "across"
-              ? isLast("across", selected.col)
-                ? 0
-                : (selected.col + 1) % dimensions.cols
-              : isLast("down", selected.row)
-              ? (selected.col + 1) % dimensions.cols
-              : selected.col,
-        });
+        //         : (selected.col + 1) % dimensions.cols
+        //       : selected.row == dimensions.rows - 1 // Last row
+        //       ? (selected.col + 1) % dimensions.cols
+        //       : selected.col,
+        // });
       } else {
         const pressedKey = {
           32: "space",
@@ -257,9 +272,5 @@ export default function Board(props) {
       );
     });
   };
-  return (
-    <BoardContext.Provider value={{ dimensions: props.dimensions }}>
-      <Layout>{renderCells()}</Layout>
-    </BoardContext.Provider>
-  );
+  return <Layout>{renderCells()}</Layout>;
 }
