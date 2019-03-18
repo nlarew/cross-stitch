@@ -3,54 +3,108 @@ import useKey from "use-key-hook";
 import styled from "@emotion/styled";
 import Cell from "./Cell.js";
 
-import * as R from "ramda";
-
-import Puzzle from "./../Puzzle.js";
-const puz = require("./../puzzles/nov_17.json");
-const puzzle = Puzzle.from(puz).toJson();
-
 function getCellIndex(row, col, dimensions) {
   const previousRowsPriorCells = row * dimensions.cols;
   const thisRowPriorCells = col;
   return previousRowsPriorCells + thisRowPriorCells;
 }
-const initialBoardState = puzzle;
-function boardReducer(state, action) {
-  switch (action.type) {
-    case "setCellValue": {
-      // { payload: { pos: { row, col }, value } }
-      // Set Value
-      const {
-        pos: { row = 0, col = 0 },
-        value,
-      } = action.payload;
-      const idx = getCellIndex(row, col, state.dimensions);
-      const cell = R.clone(state.cells[idx]);
-      // Select Next Cell
-      const next = { row, col };
-      const updatedCells = R.update(idx, { ...cell, value }, state.cells);
-      return {
-        ...state,
-        selected: next,
-        cells: R.update(idx, { ...cell, value }, state.cells),
-      };
+
+function getNextCellPos(row, col, direction, dimensions) {
+  switch (direction) {
+    case "across": {
+      const isLastInRow = col === dimensions.cols - 1; // Last column
+      if (isLastInRow) {
+        return {
+          row: (row + 1) % dimensions.rows,
+          col: 0,
+        };
+      } else {
+        return {
+          row: row,
+          col: (col + 1) % dimensions.cols,
+        };
+      }
     }
-    case "setSelectedCell": {
-      // { payload: { row, col } }
-      // If the specified cell is not currently selected,
-      // set the value of selectedCell to the specified cell
-      const { row, col } = action.payload;
-      return { ...state, selectedCell: { row, col } };
+    case "down": {
+      const isLastInCol = row === dimensions.rows - 1; // Last row
+      if (isLastInCol) {
+        return {
+          row: 0,
+          col: (col + 1) % dimensions.cols,
+        };
+      } else {
+        return {
+          row: (row + 1) % dimensions.rows,
+          col: col,
+        };
+      }
     }
-    case "toggleDirection": {
-      // { payload: null }
-      // Change the clue direction from "across" to "row" or vice-versa
-      const direction = state.direction == "across" ? "down" : "across";
-      return { ...state, direction };
+  }
+}
+function getPreviousCellPos(row, col, direction, dimensions) {
+  switch (direction) {
+    case "across": {
+      const isFirstInRow = col % dimensions.cols == 0; // First column
+      if (isFirstInRow) {
+        return {
+          row: row - 1,
+          col: dimensions.cols - 1,
+        };
+      } else {
+        return {
+          row: row,
+          col: col - 1,
+        };
+      }
     }
-    default: {
-      throw new Error(`Not a valid action type: ${action}`);
+    case "down": {
+      const isFirstInCol = row % dimensions.rows == 0; // First row
+      if (isFirstInCol) {
+        return {
+          row: dimensions.rows - 1,
+          col: col - 1,
+        };
+      } else {
+        return {
+          row: row - 1,
+          col: col,
+        };
+      }
     }
+  }
+}
+
+function getNextNonVoidCellPos(row, col, direction, cells, dimensions) {
+  const nextPos = getNextCellPos(row, col, direction, dimensions);
+
+  const next = cells[getCellIndex(nextPos.row, nextPos.col, dimensions)];
+  if (next.isVoid) {
+    console.log(`next is void`);
+    return getNextNonVoidCellPos(
+      nextPos.row,
+      nextPos.col,
+      direction,
+      cells,
+      dimensions,
+    );
+  } else {
+    return nextPos;
+  }
+}
+
+function getPreviousNonVoidCellPos(row, col, direction, cells, dimensions) {
+  const prevPos = getPreviousCellPos(row, col, direction, dimensions);
+  const prev = cells[getCellIndex(prevPos.row, prevPos.col, dimensions)];
+  if (prev.isVoid) {
+    return getPreviousNonVoidCellPos(
+      prevPos.row,
+      prevPos.col,
+      direction,
+      cells,
+      dimensions,
+    );
+  } else {
+    return prevPos;
   }
 }
 
@@ -58,58 +112,18 @@ export default function Board(props) {
   const dimensions = props.dimensions;
   const Layout = styled.div`
     max-width: ${dimensions.cols * 32}px;
+    margin-left: auto;
+    margin-right: auto;
     display: grid;
     grid-template-rows: repeat(${dimensions.rows}, 1fr);
     grid-template-columns: repeat(${dimensions.cols}, 1fr);
   `;
 
-  const [board, dispatch] = useReducer(boardReducer, initialBoardState);
-  const { cells, direction, selectedCell } = board;
-
-  const getNextCellPos = (row, col, direction) => {
-    switch (direction) {
-      case "across": {
-        const isLastInRow = col == dimensions.cols - 1; // Last column
-        if (isLastInRow) {
-          return {
-            row: (row + 1) % dimensions.rows,
-            col: 0,
-          };
-        } else {
-          return {
-            row: row,
-            col: (col + 1) % dimensions.cols,
-          };
-        }
-      }
-      case "down": {
-        const isLastInCol = row == dimensions.rows - 1; // Last row
-        if (isLastInCol) {
-          return {
-            row: 0,
-            col: (col + 1) % dimensions.cols,
-          };
-        } else {
-          return {
-            row: (row + 1) % dimensions.rows,
-            col: col,
-          };
-        }
-      }
-    }
-  };
-
-  function getNextNonVoidCellPos(row, col, direction) {
-    const nextPos = getNextCellPos(row, col, direction);
-    const next = cells[getCellIndex(nextPos.row, nextPos.col, dimensions)];
-    if (next.isVoid) {
-      return getNextNonVoidCellPos(nextPos.row, nextPos.col, direction);
-    } else {
-      return nextPos;
-    }
-  }
+  const { cells, direction, selectedCell } = props.board;
+  const dispatch = props.dispatch;
 
   const setCell = payload => {
+    console.log(`setCell`, payload);
     dispatch({ type: "setCellValue", payload });
   };
 
@@ -118,6 +132,7 @@ export default function Board(props) {
   };
 
   const setSelected = pos => {
+    console.log(`setSelected { row: ${pos.row}, col: ${pos.col} }`);
     dispatch({ type: "setSelectedCell", payload: pos });
   };
 
@@ -172,29 +187,14 @@ export default function Board(props) {
           selected.row,
           selected.col,
           direction,
+          cells,
+          dimensions,
         );
-        console.log("next", next);
         setSelected(next);
-        // setSelected({
-        //   row:
-        //     direction == "across"
-        //       ? selected.col == dimensions.cols - 1 // Last column
-        //         ? (selected.row + 1) % dimensions.rows
-        //         : selected.row
-        //       : selected.row == dimensions.rows - 1 // Last row
-        //       ? 0
-        //       : (selected.row + 1) % dimensions.rows,
-        //   col:
-        //     direction == "across"
-        //       ? selected.col == dimensions.cols - 1 // Last column
-        //         ? 0
-        //         : (selected.col + 1) % dimensions.cols
-        //       : selected.row == dimensions.rows - 1 // Last row
-        //       ? (selected.col + 1) % dimensions.cols
-        //       : selected.col,
-        // });
       } else {
         const pressedKey = {
+          8: "delete",
+          13: "enter",
           32: "space",
           37: "left",
           38: "up",
@@ -202,25 +202,83 @@ export default function Board(props) {
           40: "down",
         }[keyNum];
         const handler = {
-          left: () => {
-            if (selected.col !== 0) {
-              setSelected({ row: selected.row, col: selected.col - 1 });
+          delete: () => {
+            const cell =
+              cells[getCellIndex(selected.row, selected.col, dimensions)];
+            if (cell.value == "") {
+              const prev = getPreviousNonVoidCellPos(
+                selected.row,
+                selected.col,
+                direction,
+                cells,
+                dimensions,
+              );
+              setSelected(prev);
+            } else {
+              setCell({
+                pos: { row: selected.row, col: selected.col },
+                value: "",
+              });
             }
+          },
+          enter: () => {
+            const cell =
+              cells[getCellIndex(selected.row, selected.col, dimensions)];
+            if (cell.value == "") {
+              const next = getNextNonVoidCellPos(
+                selected.row,
+                selected.col,
+                direction,
+                cells,
+                dimensions,
+              );
+              setSelected(next);
+            } else {
+              setCell({
+                pos: { row: selected.row, col: selected.col },
+                value: "",
+              });
+            }
+          },
+          left: () => {
+            const prev = getPreviousNonVoidCellPos(
+              selected.row,
+              selected.col,
+              "across",
+              cells,
+              dimensions,
+            );
+            setSelected(prev);
           },
           up: () => {
-            if (selected.row !== 0) {
-              setSelected({ row: selected.row - 1, col: selected.col });
-            }
+            const next = getPreviousNonVoidCellPos(
+              selected.row,
+              selected.col,
+              "down",
+              cells,
+              dimensions,
+            );
+            setSelected(next);
           },
           right: () => {
-            if (selected.col !== dimensions.cols - 1) {
-              setSelected({ row: selected.row, col: selected.col + 1 });
-            }
+            const next = getNextNonVoidCellPos(
+              selected.row,
+              selected.col,
+              "across",
+              cells,
+              dimensions,
+            );
+            setSelected(next);
           },
           down: () => {
-            if (selected.row !== dimensions.rows - 1) {
-              setSelected({ row: selected.row + 1, col: selected.col });
-            }
+            const next = getNextNonVoidCellPos(
+              selected.row,
+              selected.col,
+              "down",
+              cells,
+              dimensions,
+            );
+            setSelected(next);
           },
           space: () => {
             toggleDirection();
@@ -231,7 +289,9 @@ export default function Board(props) {
     },
     {
       detectKeys: new Array()
-        .concat([32, 37, 38, 39, 40]) // Space + Arrow Keys
+        .concat([8, 13]) // Delete & Enter
+        .concat([32]) // Space
+        .concat([37, 38, 39, 40]) // Arrow Keys
         .concat(letters.uppercase)
         .concat(letters.lowercase),
     },
