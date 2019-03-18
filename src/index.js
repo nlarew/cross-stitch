@@ -90,12 +90,38 @@ function PuzzleUI(props) {
 
 function MenuUI(props) {}
 
+const AppLayout = styled.div`
+  display: grid;
+  grid-template-areas:
+    "topbar topbar topbar"
+    "board  board  clues"
+    "board  board  clues";
+  grid-template-rows: 50px 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
+`;
+
+const Topbar = styled.div`
+  grid-area: topbar;
+  display: flex;
+  flex-direction: row;
+`;
+
+const BoardArea = styled.div`
+  grid-area: board;
+  display: flex;
+  flex-direction: row;
+`;
+
 function App() {
   return (
-    <div className="App">
-      <h1>Game Grid</h1>
-      <PuzzleUI />
-    </div>
+    <AppLayout>
+      <Topbar>
+        <h1>Game Grid</h1>
+      </Topbar>
+      <BoardArea>
+        <PuzzleUI />
+      </BoardArea>
+    </AppLayout>
   );
 }
 

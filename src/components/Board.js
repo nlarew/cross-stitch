@@ -112,6 +112,8 @@ export default function Board(props) {
   const dimensions = props.dimensions;
   const Layout = styled.div`
     max-width: ${dimensions.cols * 32}px;
+    margin-left: auto;
+    margin-right: auto;
     display: grid;
     grid-template-rows: repeat(${dimensions.rows}, 1fr);
     grid-template-columns: repeat(${dimensions.cols}, 1fr);
@@ -193,6 +195,7 @@ export default function Board(props) {
       } else {
         const pressedKey = {
           8: "delete",
+          13: "enter",
           32: "space",
           37: "left",
           38: "up",
@@ -201,13 +204,44 @@ export default function Board(props) {
         }[keyNum];
         const handler = {
           delete: () => {
-            setCell({
-              pos: { row: selected.row, col: selected.col },
-              value: "",
-            });
+            const cell =
+              cells[getCellIndex(selected.row, selected.col, dimensions)];
+            if (cell.value == "") {
+              const prev = getPreviousNonVoidCellPos(
+                selected.row,
+                selected.col,
+                direction,
+                cells,
+                dimensions,
+              );
+              setSelected(prev);
+            } else {
+              setCell({
+                pos: { row: selected.row, col: selected.col },
+                value: "",
+              });
+            }
+          },
+          enter: () => {
+            const cell =
+              cells[getCellIndex(selected.row, selected.col, dimensions)];
+            if (cell.value == "") {
+              const next = getNextNonVoidCellPos(
+                selected.row,
+                selected.col,
+                direction,
+                cells,
+                dimensions,
+              );
+              setSelected(next);
+            } else {
+              setCell({
+                pos: { row: selected.row, col: selected.col },
+                value: "",
+              });
+            }
           },
           left: () => {
-            console.log("left");
             const prev = getPreviousNonVoidCellPos(
               selected.row,
               selected.col,
@@ -215,7 +249,6 @@ export default function Board(props) {
               cells,
               dimensions,
             );
-            console.log("prev", prev);
             setSelected(prev);
           },
           up: () => {
@@ -257,7 +290,7 @@ export default function Board(props) {
     },
     {
       detectKeys: new Array()
-        .concat([8]) // Delete
+        .concat([8, 13]) // Delete & Enter
         .concat([32]) // Space
         .concat([37, 38, 39, 40]) // Arrow Keys
         .concat(letters.uppercase)
