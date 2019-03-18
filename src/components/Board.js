@@ -117,6 +117,7 @@ export default function Board(props) {
     display: grid;
     grid-template-rows: repeat(${dimensions.rows}, 1fr);
     grid-template-columns: repeat(${dimensions.cols}, 1fr);
+    padding-left: 20px;
   `;
 
   const { cells, direction, selectedCell } = props.board;
