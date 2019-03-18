@@ -1,28 +1,26 @@
-import React, { useEffect, useState, useReducer, createContext } from "react";
+import React, { useReducer } from "react";
 import ReactDOM from "react-dom";
-import { asAnonUser } from "./stitch.js";
+// import { asAnonUser } from "./stitch.js";
 import styled from "@emotion/styled";
 import * as R from "ramda";
 
 import Board from "./components/Board.js";
+import ClueList from "./components/ClueList.js";
+import PuzzleParser from "./PuzzleParser.js";
 
-import Typography from "typography";
-import doelgerTheme from "typography-theme-doelger";
-import funstonTheme from "typography-theme-funston";
-import bootstrapTheme from "typography-theme-bootstrap";
+// import Typography from "typography";
+// import doelgerTheme from "typography-theme-doelger";
+// import funstonTheme from "typography-theme-funston";
+// import bootstrapTheme from "typography-theme-bootstrap";
 
-const typography = new Typography(funstonTheme);
-typography.injectStyles();
+// const typography = new Typography(funstonTheme);
+// typography.injectStyles();
 
-import Puzzle from "./Puzzle.js";
 const puz = require("./puzzles/nov_17.json");
-const puzzle = Puzzle.from(puz).toJson();
+const parsed = PuzzleParser.parse(puz)
+const { getCellIndex, getNextNonVoidCellPos, getPreviousNonVoidCellPos, getClueStartCell } = parsed.utils
+const puzzle = parsed.toJson();
 
-function getCellIndex(row, col, dimensions) {
-  const previousRowsPriorCells = row * dimensions.cols;
-  const thisRowPriorCells = col;
-  return previousRowsPriorCells + thisRowPriorCells;
-}
 const initialPuzzleState = puzzle;
 function puzzleReducer(state, action) {
   switch (action.type) {
@@ -33,11 +31,10 @@ function puzzleReducer(state, action) {
         pos: { row = 0, col = 0 },
         value,
       } = action.payload;
-      const idx = getCellIndex(row, col, state.dimensions);
+      const idx = getCellIndex(row, col);
       const cell = R.clone(state.cells[idx]);
       // Select Next Cell
       const next = { row, col };
-      const updatedCells = R.update(idx, { ...cell, value }, state.cells);
       return {
         ...state,
         selected: next,
@@ -55,7 +52,7 @@ function puzzleReducer(state, action) {
     case "toggleDirection": {
       // { payload: null }
       // Change the clue direction from "across" to "row" or vice-versa
-      const direction = state.direction == "across" ? "down" : "across";
+      const direction = state.direction === "across" ? "down" : "across";
       return { ...state, direction };
     }
     default: {
@@ -64,15 +61,17 @@ function puzzleReducer(state, action) {
   }
 }
 
-const PuzzleContext = createContext({});
+const Topbar = styled.div`
+  grid-area: topbar;
+  display: flex;
+  flex-direction: row;
+`;
+
+const Title = styled.h1`
+  margin: 0;
+`;
 
 function PuzzleUI(props) {
-  // container for the game
-  const Layout = styled.div`
-    display: flex;
-    flex-direction: row;
-  `;
-
   const [puzzle, dispatch] = useReducer(puzzleReducer, initialPuzzleState);
   const dimensions = { rows: 15, cols: 15 };
   const board = {
@@ -81,47 +80,70 @@ function PuzzleUI(props) {
     selectedCell: puzzle.selectedCell,
   };
 
-  return (
-    <Layout>
-      <Board dimensions={dimensions} board={board} dispatch={dispatch} />
-    </Layout>
-  );
-}
+  // container for the game
+  const AppLayout = styled.div`
+    display: grid;
+    grid-template-areas:
+      "topbar topbar topbar"
+      "board  board  clues"
+      "board  board  clues";
+    grid-template-rows: 50px 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
+    max-height: ${dimensions.rows * 32 + 50}px;
+    max-width: ${dimensions.cols * 32 * 1.5}px;
+  `;
+  const BoardArea = styled.div`
+    grid-area: board;
+  `;
+  const ClueArea = styled.div`
+    grid-area: clues;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid black;
+    border-left: none;
+    max-height: 100%;
+  `;
 
-function MenuUI(props) {}
-
-const AppLayout = styled.div`
-  display: grid;
-  grid-template-areas:
-    "topbar topbar topbar"
-    "board  board  clues"
-    "board  board  clues";
-  grid-template-rows: 50px 1fr 1fr;
-  grid-template-columns: 1fr 1fr 1fr;
-`;
-
-const Topbar = styled.div`
-  grid-area: topbar;
-  display: flex;
-  flex-direction: row;
-`;
-
-const BoardArea = styled.div`
-  grid-area: board;
-  display: flex;
-  flex-direction: row;
-`;
-
-function App() {
   return (
     <AppLayout>
       <Topbar>
-        <h1>Game Grid</h1>
+        <Title>Cross-Stitch</Title>
       </Topbar>
       <BoardArea>
-        <PuzzleUI />
+        <Board
+          dimensions={dimensions}
+          board={board}
+          dispatch={dispatch}
+          getCellIndex={getCellIndex}
+          getNextNonVoidCellPos={getNextNonVoidCellPos}
+          getPreviousNonVoidCellPos={getPreviousNonVoidCellPos}
+        />
       </BoardArea>
+      <ClueArea>
+        <ClueList
+          clues={puzzle.clues.across}
+          clueDirection="Across"
+          dispatch={dispatch}
+          selectedCell={puzzle.selectedCell}
+          direction={puzzle.direction}
+          getClueStartCell={getClueStartCell}
+        />
+        <ClueList
+          clues={puzzle.clues.down}
+          clueDirection="Down"
+          dispatch={dispatch}
+          selectedCell={puzzle.selectedCell}
+          direction={puzzle.direction}
+          getClueStartCell={getClueStartCell}
+        />
+      </ClueArea>
     </AppLayout>
+  );
+}
+
+function App() {
+  return (
+    <PuzzleUI />
   );
 }
 

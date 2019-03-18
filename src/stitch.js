@@ -1,4 +1,4 @@
-import React, { useEffect, createContext } from "react";
+import React from "react";
 import {
   Stitch,
   AnonymousCredential,

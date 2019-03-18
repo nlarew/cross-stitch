@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React from "react";
 import styled from "@emotion/styled";
 
 export default React.memo(function Cell({
@@ -14,46 +14,44 @@ export default React.memo(function Cell({
   isVoid = false,
 }) {
   const { row, col } = pos;
-  const bgcolor = ({ row, col }) => {
-    const isEvenRow = row % 2 == 0;
-    const isEvenCol = col % 2 == 0;
-    return isEvenRow
-      ? isEvenCol
-        ? "#cff0da"
-        : "#88dba3"
-      : isEvenCol
-      ? "#bbe84b"
-      : "#3ac569";
-  };
   const Container = styled.div`
     position: relative;
     width: 32px;
     height: 32px;
-    background-color: ${isSelected ? "#00ff00" : bgcolor({ row, col })};
-    background-color: ${isSelected
-      ? "#00ff00"
+    background-color: ${
+      isSelected
+        ? "#dfdfdf"
       : isAdjacent
-      ? "#C5E99B"
+        ? "#f4f4f4"
       : isInClue
-      ? "#00dd00"
-      : "#cff0da"};
+        ? "#efefef"
+      : "#fdfdfd"
+    };
     text-align: center;
     line-height: 32px;
 
     // Cell Borders
     box-sizing: border-box;
-    border-top: ${isPuzzleEdge.top
-      ? "1px solid #000000"
-      : "0.5px solid #bfe0da"};
-    border-right: ${isPuzzleEdge.right
-      ? "1px solid #000000"
-      : "0.5px solid #bfe0da"};
-    border-bottom: ${isPuzzleEdge.bottom
-      ? "1px solid black"
-      : "0.5px solid #bfe0da"};
-    border-left: ${isPuzzleEdge.left
-      ? "1px solid #000000"
-      : "0.5px solid #bfe0da"};
+    border-top: ${
+      isPuzzleEdge.top
+        ? "1px solid #000000"
+        : "0.5px solid #dfdfdf"
+      };
+    border-right: ${
+      isPuzzleEdge.right
+        ? "1px solid #000000"
+        : "0.5px solid #dfdfdf"
+      };
+    border-bottom: ${
+      isPuzzleEdge.bottom
+        ? "1px solid black"
+        : "0.5px solid #dfdfdf"
+      };
+    border-left: ${
+      isPuzzleEdge.left
+        ? "1px solid #000000"
+        : "0.5px solid #dfdfdf"
+      };
   `;
 
   const VoidContainer = styled(Container)`

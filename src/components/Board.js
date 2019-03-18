@@ -1,124 +1,18 @@
-import React, { useEffect, useState, useReducer } from "react";
+import React from "react";
 import useKey from "use-key-hook";
 import styled from "@emotion/styled";
 import Cell from "./Cell.js";
 
-function getCellIndex(row, col, dimensions) {
-  const previousRowsPriorCells = row * dimensions.cols;
-  const thisRowPriorCells = col;
-  return previousRowsPriorCells + thisRowPriorCells;
-}
-
-function getNextCellPos(row, col, direction, dimensions) {
-  switch (direction) {
-    case "across": {
-      const isLastInRow = col === dimensions.cols - 1; // Last column
-      if (isLastInRow) {
-        return {
-          row: (row + 1) % dimensions.rows,
-          col: 0,
-        };
-      } else {
-        return {
-          row: row,
-          col: (col + 1) % dimensions.cols,
-        };
-      }
-    }
-    case "down": {
-      const isLastInCol = row === dimensions.rows - 1; // Last row
-      if (isLastInCol) {
-        return {
-          row: 0,
-          col: (col + 1) % dimensions.cols,
-        };
-      } else {
-        return {
-          row: (row + 1) % dimensions.rows,
-          col: col,
-        };
-      }
-    }
-  }
-}
-function getPreviousCellPos(row, col, direction, dimensions) {
-  switch (direction) {
-    case "across": {
-      const isFirstInRow = col % dimensions.cols == 0; // First column
-      if (isFirstInRow) {
-        return {
-          row: row - 1,
-          col: dimensions.cols - 1,
-        };
-      } else {
-        return {
-          row: row,
-          col: col - 1,
-        };
-      }
-    }
-    case "down": {
-      const isFirstInCol = row % dimensions.rows == 0; // First row
-      if (isFirstInCol) {
-        return {
-          row: dimensions.rows - 1,
-          col: col - 1,
-        };
-      } else {
-        return {
-          row: row - 1,
-          col: col,
-        };
-      }
-    }
-  }
-}
-
-function getNextNonVoidCellPos(row, col, direction, cells, dimensions) {
-  const nextPos = getNextCellPos(row, col, direction, dimensions);
-
-  const next = cells[getCellIndex(nextPos.row, nextPos.col, dimensions)];
-  if (next.isVoid) {
-    console.log(`next is void`);
-    return getNextNonVoidCellPos(
-      nextPos.row,
-      nextPos.col,
-      direction,
-      cells,
-      dimensions,
-    );
-  } else {
-    return nextPos;
-  }
-}
-
-function getPreviousNonVoidCellPos(row, col, direction, cells, dimensions) {
-  const prevPos = getPreviousCellPos(row, col, direction, dimensions);
-  const prev = cells[getCellIndex(prevPos.row, prevPos.col, dimensions)];
-  if (prev.isVoid) {
-    return getPreviousNonVoidCellPos(
-      prevPos.row,
-      prevPos.col,
-      direction,
-      cells,
-      dimensions,
-    );
-  } else {
-    return prevPos;
-  }
-}
-
 export default function Board(props) {
-  const dimensions = props.dimensions;
+  const { dimensions } = props;
   const Layout = styled.div`
     max-width: ${dimensions.cols * 32}px;
-    margin-left: auto;
-    margin-right: auto;
     display: grid;
     grid-template-rows: repeat(${dimensions.rows}, 1fr);
     grid-template-columns: repeat(${dimensions.cols}, 1fr);
-    padding-left: 20px;
   `;
+
+  const { getNextNonVoidCellPos, getPreviousNonVoidCellPos } = props
 
   const { cells, direction, selectedCell } = props.board;
   const dispatch = props.dispatch;
@@ -205,8 +99,8 @@ export default function Board(props) {
         const handler = {
           delete: () => {
             const cell =
-              cells[getCellIndex(selected.row, selected.col, dimensions)];
-            if (cell.value == "") {
+              cells[props.getCellIndex(selected.row, selected.col, dimensions)];
+            if (cell.value === "") {
               const prev = getPreviousNonVoidCellPos(
                 selected.row,
                 selected.col,
@@ -224,8 +118,8 @@ export default function Board(props) {
           },
           enter: () => {
             const cell =
-              cells[getCellIndex(selected.row, selected.col, dimensions)];
-            if (cell.value == "") {
+              cells[props.getCellIndex(selected.row, selected.col, dimensions)];
+            if (cell.value === "") {
               const next = getNextNonVoidCellPos(
                 selected.row,
                 selected.col,
@@ -289,6 +183,7 @@ export default function Board(props) {
       }
     },
     {
+      // eslint-disable-next-line
       detectKeys: new Array()
         .concat([8, 13]) // Delete & Enter
         .concat([32]) // Space
@@ -304,21 +199,31 @@ export default function Board(props) {
       const isSelected = (row, col) =>
         row === null || col === null
           ? false
-          : selectedCell.row == row && selectedCell.col == col;
+          : selectedCell.row === row && selectedCell.col === col;
       const isInClue = (row, col) => {
         switch (direction) {
-          case "across":
-            return row == selectedCell.row;
-          case "down":
-            return col == selectedCell.col;
+          case "across": {
+            return row === selectedCell.row;
+          }
+          case "down": {
+            return col === selectedCell.col;
+          }
+          default: {
+            console.error(`Bad direction: ${direction}`)
+          }
         }
       };
       const isAdjacent = (row, col) => {
         switch (direction) {
-          case "across":
-            return col == selectedCell.col;
-          case "down":
-            return row == selectedCell.row;
+          case "across": {
+            return col === selectedCell.col;
+          }
+          case "down": {
+            return row === selectedCell.row;
+          }
+          default: {
+            console.error(`Bad direction: ${direction}`)
+          }
         }
       };
       return (
