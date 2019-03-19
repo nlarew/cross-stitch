@@ -4,6 +4,78 @@ function _getCellPosFromIndex(idx, dimensions) {
   return { row, col };
 }
 
+function _getNextCellPos(row, col, direction, dimensions) {
+  switch (direction) {
+    case "across": {
+      const isLastInRow = col === dimensions.cols - 1; // Last column
+      if (isLastInRow) {
+        return {
+          row: (row + 1) % dimensions.rows,
+          col: 0
+        };
+      } else {
+        return {
+          row: row,
+          col: (col + 1) % dimensions.cols
+        };
+      }
+    }
+    case "down": {
+      const isLastInCol = row === dimensions.rows - 1; // Last row
+      if (isLastInCol) {
+        return {
+          row: 0,
+          col: (col + 1) % dimensions.cols
+        };
+      } else {
+        return {
+          row: (row + 1) % dimensions.rows,
+          col: col
+        };
+      }
+    }
+    default: {
+      console.error(`Bad direction: ${direction}`);
+    }
+  }
+};
+
+function _getPreviousCellPos(row, col, direction, dimensions) {
+  switch (direction) {
+    case "across": {
+      const isFirstInRow = col % dimensions.cols === 0; // First column
+      if (isFirstInRow) {
+        return {
+          row: row - 1,
+          col: dimensions.cols - 1
+        };
+      } else {
+        return {
+          row: row,
+          col: col - 1
+        };
+      }
+    }
+    case "down": {
+      const isFirstInCol = row % dimensions.rows === 0; // First row
+      if (isFirstInCol) {
+        return {
+          row: dimensions.rows - 1,
+          col: col - 1
+        };
+      } else {
+        return {
+          row: row - 1,
+          col: col
+        };
+      }
+    }
+    default: {
+      console.error(`Bad direction: ${direction}`);
+    }
+  }
+};
+
 function createCellMapper(puzzle) {
   const dimensions = puzzle.size;
   function mapGridToCell(answer, idx) {
@@ -46,35 +118,37 @@ function createCellMapper(puzzle) {
 }
 
 function mapClues(puzzle, direction) {
-  const { clues, answers } = puzzle;
-  function getCellsForClue(clueIndex) {
-    // From clues.across[clueIndex], get clue number
-    // getClueStartCell() -> start: { row, col }
-    // getClueStartIndex(start) -> idx
-    // find cells in same word (based on length from clue start OR include next until answer == ".")
+  const { clues, answers, gridnums } = puzzle;
+  const dimensions = puzzle.size;
+  function getCellsForClue(clueNumber, clueAnswer) {
+    const numCells = clueAnswer.length;
+    const clueFirstCellPos = _getCellPosFromIndex(gridnums.indexOf(clueNumber), dimensions);
+    let clueCellsPos = [clueFirstCellPos];
+    for(let i=1; i < numCells; i++) {
+      const prev = clueCellsPos[i-1];
+      clueCellsPos[i] = _getNextCellPos(prev.row, prev.col, direction, dimensions);
+    }
+    return clueCellsPos;
   }
 
   return clues[direction].map((clue, idx) => {
-    let [number, ...rest] = clue.split(". ");
-    number = number.toString();
+    const [number, ...rest] = clue.split(". ");
     const text = rest.join(". ");
-    const answer = {
-      text: answers[direction][idx],
-      cells: getCellsForClue(idx)
-    }
-    return { number, text, answer };
+    const answer = answers[direction][idx];
+    const cells = getCellsForClue(Number(number), answer);
+    return { number, text, answer, cells };
   })
 }
 
 class PuzzleParser {
   constructor(puzzle) {
-    this.gridnums = puzzle.gridnums
+    this.gridnums = puzzle.gridnums;
     this.dimensions = puzzle.size;
     this.selectedCell = false;
     this.direction = "across";
     this.clues = {
       across: mapClues(puzzle, "across"),
-      down: mapClues(puzzle, "down"),
+      down: mapClues(puzzle, "down")
     };
     const mapGridToCell = createCellMapper(puzzle);
     this.cells = puzzle.grid.map(mapGridToCell);
@@ -85,8 +159,15 @@ class PuzzleParser {
       getNextNonVoidCellPos: this.getNextNonVoidCellPos,
       getPreviousNonVoidCellPos: this.getPreviousNonVoidCellPos,
       getClueStartCell: this.getClueStartCell,
-    }
+      getClueForCell: this.getClueForCell
+    };
   }
+
+  // TODO: Run the non-util part of the constructor to update the model whenever state changes
+  // Should call update() in the constructor. (Is this possible? Should be I think...)
+  // This might need a "usePuzzle" effect
+  // update(puzzle) {
+  // }
 
   static parse(puzzle) {
     return new PuzzleParser(puzzle);
@@ -104,76 +185,12 @@ class PuzzleParser {
 
   getNextCellPos = (row, col, direction) => {
     const dimensions = this.dimensions;
-    switch (direction) {
-      case "across": {
-        const isLastInRow = col === dimensions.cols - 1; // Last column
-        if (isLastInRow) {
-          return {
-            row: (row + 1) % dimensions.rows,
-            col: 0
-          };
-        } else {
-          return {
-            row: row,
-            col: (col + 1) % dimensions.cols
-          };
-        }
-      }
-      case "down": {
-        const isLastInCol = row === dimensions.rows - 1; // Last row
-        if (isLastInCol) {
-          return {
-            row: 0,
-            col: (col + 1) % dimensions.cols
-          };
-        } else {
-          return {
-            row: (row + 1) % dimensions.rows,
-            col: col
-          };
-        }
-      }
-      default: {
-        console.error(`Bad direction: ${direction}`);
-      }
-    }
+    return _getNextCellPos(row, col, direction, dimensions)
   };
 
   getPreviousCellPos = (row, col, direction) => {
     const dimensions = this.dimensions;
-    switch (direction) {
-      case "across": {
-        const isFirstInRow = col % dimensions.cols === 0; // First column
-        if (isFirstInRow) {
-          return {
-            row: row - 1,
-            col: dimensions.cols - 1
-          };
-        } else {
-          return {
-            row: row,
-            col: col - 1
-          };
-        }
-      }
-      case "down": {
-        const isFirstInCol = row % dimensions.rows === 0; // First row
-        if (isFirstInCol) {
-          return {
-            row: dimensions.rows - 1,
-            col: col - 1
-          };
-        } else {
-          return {
-            row: row - 1,
-            col: col
-          };
-        }
-      }
-      default: {
-        console.error(`Bad direction: ${direction}`);
-      }
-    }
+    return _getPreviousCellPos(row, col, direction, dimensions);
   };
 
   getNextNonVoidCellPos = (row, col, direction, cells) => {
@@ -207,11 +224,32 @@ class PuzzleParser {
     }
   };
 
-  getClueStartCell = (clueNum) => {
-    console.log("gridnums:", this.gridnums[26])
+  getClueStartCell = clueNum => {
     const idx = this.gridnums.indexOf(parseInt(clueNum));
     const pos = this.getCellPosFromIndex(idx);
     return pos;
+  };
+
+  getClueForCell = (cell, direction) => {
+    if(!cell.row && !cell.col) {
+      // No cell is selected
+      return null
+    }
+    // const candidates = this.clues[direction].filter(clue => clue.cells.includes(cell))
+    const candidates = this.clues[direction].filter(clue => {
+      const cells = clue.cells
+      return cells.filter(({ row, col }) => row === cell.row && col === cell.col).length > 0
+    })
+    console.log(`candidates:`, candidates)
+    if (!candidates.length) {
+      throw new Error(
+        `No clue for the specified cell: { row: ${cell.row}, col: ${cell.col} }`
+      );
+    }
+    if (candidates.length > 1) {
+      throw new Error(`Specified cell has multiple ${direction} clues: { row: ${cell.row}, col: ${cell.col} }`)
+    }
+    return candidates[0]
   }
 
   cellsInSameClueAsCell = (selectedCell, direction) => {
@@ -223,7 +261,7 @@ class PuzzleParser {
         return selectedCell.col;
       }
       default: {
-        console.error(`Bad direction: ${direction}`)
+        console.error(`Bad direction: ${direction}`);
       }
     }
   };

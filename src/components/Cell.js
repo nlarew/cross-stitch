@@ -18,40 +18,28 @@ export default React.memo(function Cell({
     position: relative;
     width: 32px;
     height: 32px;
-    background-color: ${
-      isSelected
-        ? "#dfdfdf"
-      : isAdjacent
-        ? "#f4f4f4"
+    background-color: ${isSelected
+      ? "#5CAB7D"
       : isInClue
-        ? "#efefef"
-      : "#fdfdfd"
-    };
+      ? "#bfe0da"
+      : "#fefefe"};
     text-align: center;
     line-height: 32px;
 
     // Cell Borders
     box-sizing: border-box;
-    border-top: ${
-      isPuzzleEdge.top
-        ? "1px solid #000000"
-        : "0.5px solid #dfdfdf"
-      };
-    border-right: ${
-      isPuzzleEdge.right
-        ? "1px solid #000000"
-        : "0.5px solid #dfdfdf"
-      };
-    border-bottom: ${
-      isPuzzleEdge.bottom
-        ? "1px solid black"
-        : "0.5px solid #dfdfdf"
-      };
-    border-left: ${
-      isPuzzleEdge.left
-        ? "1px solid #000000"
-        : "0.5px solid #dfdfdf"
-      };
+    border-top: ${isPuzzleEdge.top
+      ? "1px solid #000000"
+      : "0.5px solid #dfdfdf"};
+    border-right: ${isPuzzleEdge.right
+      ? "1px solid #000000"
+      : "0.5px solid #dfdfdf"};
+    border-bottom: ${isPuzzleEdge.bottom
+      ? "1px solid black"
+      : "0.5px solid #dfdfdf"};
+    border-left: ${isPuzzleEdge.left
+      ? "1px solid #000000"
+      : "0.5px solid #dfdfdf"};
   `;
 
   const VoidContainer = styled(Container)`

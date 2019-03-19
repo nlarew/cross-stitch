@@ -29,7 +29,10 @@ const ClueListItem = styled.li`
   list-style-type: none;
   display: flex;
   flex-direction: row;
-`
+  background-color: ${props => {
+    return (props.isCurrentClue ? "#bfe0da" : "inherit")
+  }};
+`;
 
 const ClueNumber = styled.span`
   padding-left: 4px;
@@ -48,24 +51,31 @@ function ClueList({
   direction,
   selectedCell,
   dispatch,
-  getClueStartCell
+  getClueStartCell,
+  currentClue
 }) {
-  const isCurrentDirection = direction === clueDirection;
+
   return (
     <Container>
       <ClueListHeader>{clueDirection}</ClueListHeader>
       <ScrollableArea>
         {clues.map(clue => {
-          let { number, text, answer } = clue;
+          const { number, text } = clue;
+          const isCurrentDirection = direction.toUpperCase() === clueDirection.toUpperCase();
+          const isCurrentClue = isCurrentDirection && currentClue && currentClue.number === number
           const handleClick = () => {
             const clueStart = getClueStartCell(number);
             dispatch({ type: "setSelectedCell", payload: clueStart });
-            if (direction.toUpperCase() !== clueDirection.toUpperCase()) {
+            if (!isCurrentDirection) {
               dispatch({ type: "toggleDirection" });
             }
           };
           return (
-            <ClueListItem onClick={handleClick}>
+            <ClueListItem
+              key={number}
+              onClick={handleClick}
+              isCurrentClue={isCurrentClue}
+            >
               <ClueNumber>{number}.</ClueNumber>
               <ClueText>{text}</ClueText>
             </ClueListItem>

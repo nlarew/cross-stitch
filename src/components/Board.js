@@ -14,11 +14,11 @@ export default function Board(props) {
 
   const { getNextNonVoidCellPos, getPreviousNonVoidCellPos } = props
 
-  const { cells, direction, selectedCell } = props.board;
+  const { cells, direction, selectedCell, currentClue } = props.board;
+
   const dispatch = props.dispatch;
 
   const setCell = payload => {
-    console.log(`setCell`, payload);
     dispatch({ type: "setCellValue", payload });
   };
 
@@ -61,6 +61,7 @@ export default function Board(props) {
   };
   useKey(
     keyNum => {
+      console.log(keyNum)
       const selected = selectedRef.current;
       const direction = directionRef.current;
       const toggleDirection = toggleRef.current;
@@ -95,6 +96,7 @@ export default function Board(props) {
           38: "up",
           39: "right",
           40: "down",
+          46: "delete",
         }[keyNum];
         const handler = {
           delete: () => {
@@ -185,7 +187,7 @@ export default function Board(props) {
     {
       // eslint-disable-next-line
       detectKeys: new Array()
-        .concat([8, 13]) // Delete & Enter
+        .concat([8, 13, 46]) // Backspace & Enter & Delete
         .concat([32]) // Space
         .concat([37, 38, 39, 40]) // Arrow Keys
         .concat(letters.uppercase)
@@ -193,7 +195,7 @@ export default function Board(props) {
     },
   );
 
-  const renderCells = () => {
+  const renderCells = currentClue => {
     return cells.map(cellData => {
       const { row, col } = cellData.pos;
       const isSelected = (row, col) =>
@@ -201,17 +203,7 @@ export default function Board(props) {
           ? false
           : selectedCell.row === row && selectedCell.col === col;
       const isInClue = (row, col) => {
-        switch (direction) {
-          case "across": {
-            return row === selectedCell.row;
-          }
-          case "down": {
-            return col === selectedCell.col;
-          }
-          default: {
-            console.error(`Bad direction: ${direction}`)
-          }
-        }
+        return currentClue && currentClue.cells.filter(cell => cell.row === row && cell.col === col).length > 0;
       };
       const isAdjacent = (row, col) => {
         switch (direction) {
@@ -222,7 +214,7 @@ export default function Board(props) {
             return row === selectedCell.row;
           }
           default: {
-            console.error(`Bad direction: ${direction}`)
+            console.error(`Bad direction: ${direction}`);
           }
         }
       };
@@ -238,5 +230,5 @@ export default function Board(props) {
       );
     });
   };
-  return <Layout>{renderCells()}</Layout>;
+  return <Layout>{renderCells(currentClue)}</Layout>;
 }

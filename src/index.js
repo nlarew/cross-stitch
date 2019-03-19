@@ -1,4 +1,4 @@
-import React, { useReducer } from "react";
+import React, { useReducer, useMemo } from "react";
 import ReactDOM from "react-dom";
 // import { asAnonUser } from "./stitch.js";
 import styled from "@emotion/styled";
@@ -18,7 +18,13 @@ import PuzzleParser from "./PuzzleParser.js";
 
 const puz = require("./puzzles/nov_17.json");
 const parsed = PuzzleParser.parse(puz)
-const { getCellIndex, getNextNonVoidCellPos, getPreviousNonVoidCellPos, getClueStartCell } = parsed.utils
+const {
+  getCellIndex,
+  getNextNonVoidCellPos,
+  getPreviousNonVoidCellPos,
+  getClueStartCell,
+  getClueForCell
+} = parsed.utils;
 const puzzle = parsed.toJson();
 
 const initialPuzzleState = puzzle;
@@ -46,7 +52,6 @@ function puzzleReducer(state, action) {
       // If the specified cell is not currently selected,
       // set the value of selectedCell to the specified cell
       const { row, col } = action.payload;
-      console.log(`setSelectedPos: { row: ${row}, col: ${col} }`);
       return { ...state, selectedCell: { row, col } };
     }
     case "toggleDirection": {
@@ -72,13 +77,13 @@ const Title = styled.h1`
 `;
 
 function PuzzleUI(props) {
-  const [puzzle, dispatch] = useReducer(puzzleReducer, initialPuzzleState);
   const dimensions = { rows: 15, cols: 15 };
-  const board = {
-    cells: puzzle.cells,
-    direction: puzzle.direction,
-    selectedCell: puzzle.selectedCell,
-  };
+  const [puzzle, dispatch] = useReducer(puzzleReducer, initialPuzzleState);
+  const { cells, direction, selectedCell } = puzzle
+  const currentClue = getClueForCell(selectedCell, direction);
+
+  const board = { cells, direction, selectedCell, currentClue };
+  console.log("currentClue", currentClue);
 
   // container for the game
   const AppLayout = styled.div`
@@ -127,6 +132,7 @@ function PuzzleUI(props) {
           selectedCell={puzzle.selectedCell}
           direction={puzzle.direction}
           getClueStartCell={getClueStartCell}
+          currentClue={currentClue}
         />
         <ClueList
           clues={puzzle.clues.down}
@@ -135,6 +141,7 @@ function PuzzleUI(props) {
           selectedCell={puzzle.selectedCell}
           direction={puzzle.direction}
           getClueStartCell={getClueStartCell}
+          currentClue={currentClue}
         />
       </ClueArea>
     </AppLayout>
