@@ -12,7 +12,12 @@ export default function Board(props) {
     grid-template-columns: repeat(${dimensions.cols}, 1fr);
   `;
 
-  const { getNextNonVoidCellPos, getPreviousNonVoidCellPos, getNextClueStartCellPos } = props
+  const {
+    getNextNonVoidCellPos,
+    getPreviousNonVoidCellPos,
+    getNextClueStartCellPos,
+    getPreviousClueEndCellPos
+  } = props;
 
   const { cells, direction, selectedCell, currentClue } = props.board;
 
@@ -74,14 +79,16 @@ export default function Board(props) {
         );
       };
 
+      const lastCellInClue = currentClue && currentClue.cells[currentClue.cells.length - 1];
+      const isLastCellInClue = lastCellInClue && selected.row === lastCellInClue.row && selected.col === lastCellInClue.col
+      const firstCellInClue = currentClue && currentClue.cells[0];
+      const isFirstCellInClue = firstCellInClue && selected.row === firstCellInClue.row && selected.col === firstCellInClue.col
       if (isLetter()) {
         const letter = String.fromCharCode(keyNum);
         setCell({
           pos: { row: selected.row, col: selected.col },
           value: letter,
         });
-        const lastCellInClue = currentClue && currentClue.cells[currentClue.cells.length - 1];
-        const isLastCellInClue = lastCellInClue && selected.row === lastCellInClue.row && selected.col === lastCellInClue.col
         const next = isLastCellInClue
           ? getNextClueStartCellPos(currentClue.number, direction)
           : getNextNonVoidCellPos(
@@ -108,13 +115,15 @@ export default function Board(props) {
             const cell =
               cells[props.getCellIndex(selected.row, selected.col, dimensions)];
             if (cell.value === "") {
-              const prev = getPreviousNonVoidCellPos(
-                selected.row,
-                selected.col,
-                direction,
-                cells,
-                dimensions,
-              );
+              const prev = isFirstCellInClue
+                ? getPreviousClueEndCellPos(currentClue.number, direction)
+                : getPreviousNonVoidCellPos(
+                    selected.row,
+                    selected.col,
+                    direction,
+                    cells,
+                    dimensions
+                  );
               setSelected(prev);
             } else {
               setCell({
@@ -124,23 +133,16 @@ export default function Board(props) {
             }
           },
           enter: () => {
-            const cell =
-              cells[props.getCellIndex(selected.row, selected.col, dimensions)];
-            if (cell.value === "") {
-              const next = getNextNonVoidCellPos(
+            const next = isLastCellInClue
+              ? getNextClueStartCellPos(currentClue.number, direction)
+              : getNextNonVoidCellPos(
                 selected.row,
                 selected.col,
                 direction,
                 cells,
                 dimensions,
               );
-              setSelected(next);
-            } else {
-              setCell({
-                pos: { row: selected.row, col: selected.col },
-                value: "",
-              });
-            }
+            setSelected(next);
           },
           left: () => {
             const prev = getPreviousNonVoidCellPos(

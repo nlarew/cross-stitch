@@ -156,11 +156,12 @@ class PuzzleParser {
     this.utils = {
       getCellIndex: this.getCellIndex,
       getCellPosFromIndex: this.getCellPosFromIndex,
+      getNextClueStartCellPos: this.getNextClueStartCellPos,
+      getPreviousClueEndCellPos: this.getPreviousClueEndCellPos,
       getNextNonVoidCellPos: this.getNextNonVoidCellPos,
       getPreviousNonVoidCellPos: this.getPreviousNonVoidCellPos,
       getClueStartCell: this.getClueStartCell,
-      getClueForCell: this.getClueForCell,
-      getNextClueStartCellPos: this.getNextClueStartCellPos
+      getClueForCell: this.getClueForCell
     };
   }
 
@@ -230,8 +231,18 @@ class PuzzleParser {
     const currentClueIndex = clues
       .map((c, i) => [i, c])
       .filter(([idx, clue]) => clue.number === currentClueNumber)[0][0]
-    const nextClue = clues[currentClueIndex + 1]
+    const nextClue = clues[(currentClueIndex + 1) % clues.length];
     return nextClue.cells[0]
+  }
+
+  getPreviousClueEndCellPos = (currentClueNumber, direction) => {
+    const clues = this.clues[direction]
+    const currentClueIndex = clues
+      .map((c, i) => [i, c])
+      .filter(([idx, clue]) => clue.number === currentClueNumber)[0][0]
+    const mod = (x, n) => (x % n + n) % n // This lets -1 underflow to n-1 https://web.archive.org/web/20090717035140if_/javascript.about.com/od/problemsolving/a/modulobug.htm
+    const prevClue = clues[mod((currentClueIndex - 1), clues.length)];
+    return prevClue.cells[prevClue.cells.length - 1];
   }
 
   getClueStartCell = clueNum => {

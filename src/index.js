@@ -21,6 +21,7 @@ const parsed = PuzzleParser.parse(puz)
 const {
   getCellIndex,
   getNextClueStartCellPos,
+  getPreviousClueEndCellPos,
   getNextNonVoidCellPos,
   getPreviousNonVoidCellPos,
   getClueStartCell,
@@ -123,6 +124,7 @@ function PuzzleUI(props) {
           getNextNonVoidCellPos={getNextNonVoidCellPos}
           getPreviousNonVoidCellPos={getPreviousNonVoidCellPos}
           getNextClueStartCellPos={getNextClueStartCellPos}
+          getPreviousClueEndCellPos={getPreviousClueEndCellPos}
         />
       </BoardArea>
       <ClueArea>
