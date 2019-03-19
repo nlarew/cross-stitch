@@ -12,7 +12,7 @@ export default function Board(props) {
     grid-template-columns: repeat(${dimensions.cols}, 1fr);
   `;
 
-  const { getNextNonVoidCellPos, getPreviousNonVoidCellPos } = props
+  const { getNextNonVoidCellPos, getPreviousNonVoidCellPos, getNextClueStartCellPos } = props
 
   const { cells, direction, selectedCell, currentClue } = props.board;
 
@@ -27,7 +27,6 @@ export default function Board(props) {
   };
 
   const setSelected = pos => {
-    console.log(`setSelected { row: ${pos.row}, col: ${pos.col} }`);
     dispatch({ type: "setSelectedCell", payload: pos });
   };
 
@@ -46,6 +45,8 @@ export default function Board(props) {
   toggleRef.current = toggleDirection;
   const directionRef = React.useRef();
   directionRef.current = direction;
+  const currentClueRef = React.useRef();
+  currentClueRef.current = currentClue;
 
   function keysInRange(start, end) {
     let keys = [];
@@ -61,10 +62,10 @@ export default function Board(props) {
   };
   useKey(
     keyNum => {
-      console.log(keyNum)
       const selected = selectedRef.current;
       const direction = directionRef.current;
       const toggleDirection = toggleRef.current;
+      const currentClue = currentClueRef.current;
 
       const isLetter = () => {
         return (
@@ -79,13 +80,17 @@ export default function Board(props) {
           pos: { row: selected.row, col: selected.col },
           value: letter,
         });
-        const next = getNextNonVoidCellPos(
-          selected.row,
-          selected.col,
-          direction,
-          cells,
-          dimensions,
-        );
+        const lastCellInClue = currentClue && currentClue.cells[currentClue.cells.length - 1];
+        const isLastCellInClue = lastCellInClue && selected.row === lastCellInClue.row && selected.col === lastCellInClue.col
+        const next = isLastCellInClue
+          ? getNextClueStartCellPos(currentClue.number, direction)
+          : getNextNonVoidCellPos(
+              selected.row,
+              selected.col,
+              direction,
+              cells,
+              dimensions,
+            );
         setSelected(next);
       } else {
         const pressedKey = {

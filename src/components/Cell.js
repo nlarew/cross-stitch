@@ -14,7 +14,7 @@ export default React.memo(function Cell({
   isVoid = false,
 }) {
   const { row, col } = pos;
-  const Container = styled.div`
+  const Container = React.memo(styled.div`
     position: relative;
     width: 32px;
     height: 32px;
@@ -40,12 +40,12 @@ export default React.memo(function Cell({
     border-left: ${isPuzzleEdge.left
       ? "1px solid #000000"
       : "0.5px solid #dfdfdf"};
-  `;
+  `);
 
-  const VoidContainer = styled(Container)`
+  const VoidContainer = React.memo(styled(Container)`
     background-color: black;
     border-color: black;
-  `;
+  `);
 
   const GridNumber = styled.span`
     position: absolute;

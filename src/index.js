@@ -1,4 +1,4 @@
-import React, { useReducer, useMemo } from "react";
+import React, { useReducer } from "react";
 import ReactDOM from "react-dom";
 // import { asAnonUser } from "./stitch.js";
 import styled from "@emotion/styled";
@@ -20,6 +20,7 @@ const puz = require("./puzzles/nov_17.json");
 const parsed = PuzzleParser.parse(puz)
 const {
   getCellIndex,
+  getNextClueStartCellPos,
   getNextNonVoidCellPos,
   getPreviousNonVoidCellPos,
   getClueStartCell,
@@ -83,7 +84,6 @@ function PuzzleUI(props) {
   const currentClue = getClueForCell(selectedCell, direction);
 
   const board = { cells, direction, selectedCell, currentClue };
-  console.log("currentClue", currentClue);
 
   // container for the game
   const AppLayout = styled.div`
@@ -122,6 +122,7 @@ function PuzzleUI(props) {
           getCellIndex={getCellIndex}
           getNextNonVoidCellPos={getNextNonVoidCellPos}
           getPreviousNonVoidCellPos={getPreviousNonVoidCellPos}
+          getNextClueStartCellPos={getNextClueStartCellPos}
         />
       </BoardArea>
       <ClueArea>

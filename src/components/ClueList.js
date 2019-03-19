@@ -49,19 +49,18 @@ function ClueList({
   clueDirection,
   clues,
   direction,
-  selectedCell,
   dispatch,
   getClueStartCell,
   currentClue
 }) {
 
+  const isCurrentDirection = direction.toUpperCase() === clueDirection.toUpperCase();
   return (
     <Container>
       <ClueListHeader>{clueDirection}</ClueListHeader>
       <ScrollableArea>
         {clues.map(clue => {
           const { number, text } = clue;
-          const isCurrentDirection = direction.toUpperCase() === clueDirection.toUpperCase();
           const isCurrentClue = isCurrentDirection && currentClue && currentClue.number === number
           const handleClick = () => {
             const clueStart = getClueStartCell(number);
@@ -86,4 +85,4 @@ function ClueList({
   );
 }
 
-export default ClueList
+export default React.memo(ClueList)

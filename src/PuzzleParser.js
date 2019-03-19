@@ -159,7 +159,8 @@ class PuzzleParser {
       getNextNonVoidCellPos: this.getNextNonVoidCellPos,
       getPreviousNonVoidCellPos: this.getPreviousNonVoidCellPos,
       getClueStartCell: this.getClueStartCell,
-      getClueForCell: this.getClueForCell
+      getClueForCell: this.getClueForCell,
+      getNextClueStartCellPos: this.getNextClueStartCellPos
     };
   }
 
@@ -224,6 +225,15 @@ class PuzzleParser {
     }
   };
 
+  getNextClueStartCellPos = (currentClueNumber, direction) => {
+    const clues = this.clues[direction]
+    const currentClueIndex = clues
+      .map((c, i) => [i, c])
+      .filter(([idx, clue]) => clue.number === currentClueNumber)[0][0]
+    const nextClue = clues[currentClueIndex + 1]
+    return nextClue.cells[0]
+  }
+
   getClueStartCell = clueNum => {
     const idx = this.gridnums.indexOf(parseInt(clueNum));
     const pos = this.getCellPosFromIndex(idx);
@@ -231,16 +241,15 @@ class PuzzleParser {
   };
 
   getClueForCell = (cell, direction) => {
-    if(!cell.row && !cell.col) {
+    if (!cell.row && cell.row !== 0 && !cell.col && cell.col !== 0) {
       // No cell is selected
-      return null
+      return null;
     }
     // const candidates = this.clues[direction].filter(clue => clue.cells.includes(cell))
     const candidates = this.clues[direction].filter(clue => {
       const cells = clue.cells
       return cells.filter(({ row, col }) => row === cell.row && col === cell.col).length > 0
     })
-    console.log(`candidates:`, candidates)
     if (!candidates.length) {
       throw new Error(
         `No clue for the specified cell: { row: ${cell.row}, col: ${cell.col} }`
